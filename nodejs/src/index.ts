@@ -1,15 +1,31 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
+import { serveStatic } from '@hono/node-server/serve-static'
 
 const app = new Hono()
+app.get('/', (c) => c.text('Hello Node.js!'))
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
+// Serve static files
+app.use('/static/*', serveStatic({ root: './' }))
+
+serve(app)
+
+const server = serve({
+  fetch: app.fetch,
+  port: 8787,
 })
 
-serve({
-  fetch: app.fetch,
-  port: 3000
-}, (info) => {
-  console.log(`Server is running on http://localhost:${info.port}`)
+// graceful shutdown
+process.on('SIGINT', () => {
+  server.close()
+  process.exit(0)
+})
+process.on('SIGTERM', () => {
+  server.close((err) => {
+    if (err) {
+      console.error(err)
+      process.exit(1)
+    }
+    process.exit(0)
+  })
 })
